@@ -3,80 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>피셔맨 타이쿤 : 인포메이션 에디션</title>
+    <title>피셔맨 타이쿤 : 컴플리트 에디션</title>
     <style>
         :root {
             --sky-day: #87CEEB; --sea-day: #1E90FF;
             --sky-night: #1a1a2e; --sea-night: #16213e;
         }
-        body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 1s; background: #f0f0f0; }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; transition: 1s; background: #f0f0f0; user-select: none; }
         .day-mode { --sky: var(--sky-day); --sea: var(--sea-day); --panel-bg: white; --text: black; }
         .night-mode { --sky: var(--sky-night); --sea: var(--sea-night); --panel-bg: #252545; --text: #e0e0e0; background: #0f0f1b; }
 
+        /* 게임 화면 및 효과 */
         #game-window { 
             position: relative; width: 480px; height: 320px; 
             background: linear-gradient(to bottom, var(--sky) 50%, var(--sea) 50%); 
             border: 4px solid #333; border-radius: 20px; overflow: hidden; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
 
-        #fisherman { position: absolute; top: 35%; left: 30px; font-size: 65px; z-index: 2; transition: 0.3s; }
-        #bobber { position: absolute; top: 55%; left: 240px; font-size: 25px; display: none; }
-        #alert { position: absolute; top: 40%; left: 250px; font-size: 45px; display: none; animation: bounce 0.3s infinite alternate; }
+        #fisherman { position: absolute; top: 32%; left: 30px; font-size: 65px; z-index: 2; transition: 0.3s; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3)); }
+        #bobber { position: absolute; top: 55%; left: 240px; font-size: 25px; display: none; transition: top 0.2s; }
+        #alert { position: absolute; top: 35%; left: 250px; font-size: 50px; display: none; animation: bounce 0.3s infinite alternate; text-shadow: 0 0 10px yellow; z-index: 5;}
         
-        #gauge-box { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; display: none; background: white; padding: 5px; border-radius: 15px; border: 3px solid #333; z-index: 10; }
-        #gauge-fill { height: 25px; width: 30%; background: linear-gradient(90deg, #00FF00, #32CD32); border-radius: 10px; }
+        #gauge-box { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 300px; display: none; background: rgba(255,255,255,0.9); padding: 6px; border-radius: 15px; border: 3px solid #333; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #gauge-fill { height: 25px; width: 30%; background: linear-gradient(90deg, #ff4d4d, #f9cb28, #32CD32); border-radius: 10px; transition: width 0.1s linear; }
+        #combo-text { position: absolute; top: 60px; right: 20px; font-size: 24px; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 0 #000; opacity: 0; transition: 0.3s; transform: scale(0.5); }
+        #combo-text.active { opacity: 1; transform: scale(1.2); }
 
-        /* 결과 창 팝업 */
+        /* 결과 창 팝업 (성공) */
         #result-popup { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 200px; background: rgba(255,255,255,0.95); border: 3px solid #FF7F50;
-            border-radius: 20px; text-align: center; padding: 15px; z-index: 100; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            color: #333; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            width: 220px; background: rgba(255,255,255,0.98); border: 4px solid #FF7F50;
+            border-radius: 20px; text-align: center; padding: 20px; z-index: 100; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #333; box-shadow: 0 15px 30px rgba(0,0,0,0.4);
         }
         #result-popup.show { transform: translate(-50%, -50%) scale(1); }
 
+        /* 결과 창 팝업 (실패) - 추가된 부분 */
+        #result-popup.fail { border-color: #666; background: rgba(245, 245, 245, 0.98); }
+        #result-popup.fail #pop-name { color: #555 !important; }
+        #result-popup.fail #pop-price { color: #d9534f !important; font-weight: normal; }
+
         .container { width: 490px; margin-top: 15px; }
-        .stats { background: var(--panel-bg); color: var(--text); padding: 12px; border-radius: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 2px solid #ddd; margin-bottom: 10px; transition: 0.5s; }
+        .stats { background: var(--panel-bg); color: var(--text); padding: 12px; border-radius: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 2px solid #ddd; margin-bottom: 10px; transition: 0.5s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
         .grid-ui { display: grid; grid-template-columns: 180px 1fr; gap: 15px; }
-        .panel { background: var(--panel-bg); color: var(--text); padding: 15px; border-radius: 15px; border: 2px solid #ddd; transition: 0.5s; }
-        .panel h3 { margin: 0 0 10px 0; font-size: 16px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .panel { background: var(--panel-bg); color: var(--text); padding: 15px; border-radius: 15px; border: 2px solid #ddd; transition: 0.5s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .panel h3 { margin: 0 0 10px 0; font-size: 16px; border-bottom: 2px solid #eee; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         
         #collection-ui { 
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; 
-            height: 220px; overflow-y: scroll; padding-right: 5px;
+            height: 240px; overflow-y: auto; padding-right: 5px;
         }
+        #collection-ui::-webkit-scrollbar { width: 6px; }
+        #collection-ui::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
         .fish-card { 
             text-align: center; padding: 10px; border: 1px solid #eee; 
             border-radius: 10px; background: rgba(127, 127, 127, 0.1); position: relative;
         }
-        .fish-card.unknown { opacity: 0.3; filter: grayscale(1); }
-        .fish-card .icon { font-size: 28px; display: block; }
-        .fish-card .name { font-size: 11px; font-weight: bold; margin-top: 4px; display: block; }
+        .fish-card.unknown { opacity: 0.4; filter: grayscale(1); }
+        .fish-card.rare { border: 2px solid #FFD700; background: rgba(255, 215, 0, 0.1); }
+        .fish-card .icon { font-size: 28px; display: block; margin-bottom: 2px; }
+        .fish-card .name { font-size: 12px; font-weight: bold; margin-top: 4px; display: block; }
         
-        .info-icons { font-size: 9px; margin-top: 5px; color: #888; display: flex; flex-direction: column; gap: 2px; align-items: center; }
-        .info-tag { background: rgba(0,0,0,0.1); padding: 1px 6px; border-radius: 4px; width: fit-content; }
+        .info-icons { font-size: 10px; margin-top: 5px; color: #888; display: flex; flex-direction: column; gap: 3px; align-items: center; }
+        .info-tag { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px; width: fit-content; }
 
-        .btn-main { width: 100%; padding: 15px; font-size: 20px; border-radius: 15px; margin-bottom: 10px; border: none; background: #FF7F50; color: white; box-shadow: 0 5px #d45d31; cursor: pointer; font-weight: bold; }
+        .btn-main { width: 100%; padding: 15px; font-size: 20px; border-radius: 15px; margin-bottom: 10px; border: none; background: #FF7F50; color: white; box-shadow: 0 5px #d45d31; cursor: pointer; font-weight: bold; transition: 0.1s; }
+        .btn-main:active { transform: translateY(4px); box-shadow: 0 1px #d45d31; }
+        .btn-main:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; transform: none; }
         
+        .upgrade-btn { width:100%; margin-top:5px; cursor:pointer; background:#FF7F50; color:white; border:none; padding:8px; border-radius:8px; font-weight: bold; transition: 0.2s; }
+        .upgrade-btn:hover { background: #ff6b3d; }
+        .upgrade-btn:disabled { background: #555 !important; cursor: default; }
+
+        /* 클릭 파티클 효과 */
+        .click-effect {
+            position: absolute; pointer-events: none; animation: fadeUp 0.6s ease-out forwards;
+            font-weight: bold; color: white; text-shadow: 0 0 3px black; font-size: 16px;
+        }
+        @keyframes fadeUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
         @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
     </style>
 </head>
 <body class="day-mode">
 
-    <div id="game-window" onclick="onScreenClick()">
+    <div id="game-window" onclick="onScreenClick(event)">
         <div id="gauge-box"><div id="gauge-fill"></div></div>
         <div id="fisherman">🎣</div>
         <div id="bobber">🔴</div>
         <div id="alert">❗</div>
+        <div id="combo-text">COMBO x<span id="combo-val">0</span></div>
         
         <div id="result-popup">
-            <div id="pop-title" style="font-size: 12px; color: #666;">새로운 물고기!</div>
-            <div id="pop-icon" style="font-size: 50px; margin: 5px 0;">🐟</div>
-            <div id="pop-name" style="font-size: 18px; font-weight: bold; color: #FF7F50;">멸치</div>
-            <div id="pop-price" style="font-size: 14px; margin-bottom: 10px;">+10 G</div>
-            <div id="pop-info" style="font-size: 10px; color: #888; border-top: 1px solid #eee; pt: 5px;">📍앞바다 | ☀️낮</div>
+            <div id="pop-title" style="font-size: 12px; color: #666;">성공!</div>
+            <div id="pop-icon" style="font-size: 60px; margin: 10px 0;">🐟</div>
+            <div id="pop-name" style="font-size: 20px; font-weight: bold; color: #FF7F50;">멸치</div>
+            <div id="pop-price" style="font-size: 16px; margin-bottom: 10px; font-weight:bold;">+10 G</div>
+            <div id="pop-info" style="font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 8px;">📍앞바다 | ☀️낮</div>
         </div>
 
         <div id="map-name" style="position:absolute; bottom:10px; right:20px; font-weight:bold; background:rgba(0,0,0,0.6); color:white; padding:5px 12px; border-radius:15px; font-size:12px;">현재: 앞바다</div>
@@ -93,180 +120,382 @@
 
         <div class="grid-ui">
             <div class="panel">
-                <h3>🛒 상점</h3>
-                <div style="font-size: 12px; margin-bottom:10px;">장비 강화 (+10) <button onclick="buyUpgrade('power')" style="width:100%; margin-top:5px; cursor:pointer; background:#FF7F50; color:white; border:none; padding:5px; border-radius:5px;">150 G</button></div>
-                <div style="font-size: 12px;">새 낚시터: 해운대 <button id="map-unlock-btn" onclick="unlockMap(1)" style="width:100%; margin-top:5px; cursor:pointer; background:#FF7F50; color:white; border:none; padding:5px; border-radius:5px;">500 G</button></div>
+                <h3>🛒 상점 & 이동</h3>
+                
+                <div style="font-size: 12px; margin-bottom:15px; border-bottom: 1px dashed #ccc; padding-bottom: 15px;">
+                    <div style="margin-bottom: 5px;">🎣 장비 강화 (+5)</div>
+                    <button class="upgrade-btn" onclick="buyUpgrade('power')">150 G</button>
+                </div>
+
+                <div style="font-size: 12px;">
+                    <div style="margin-bottom: 5px;">✈️ 낚시터 이동</div>
+                    <div id="map-btn-container" style="display:flex; flex-direction:column; gap:6px;">
+                        </div>
+                </div>
+
+                <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px; text-align: right;">
+                    <button onclick="resetData()" style="background:#666; font-size:10px; color:white; border:none; border-radius:4px; padding:4px 8px; cursor: pointer;">데이터 초기화</button>
+                </div>
             </div>
 
             <div class="panel">
-                <h3>🐟 도감 <small>(<span id="collect-count">0</span>/20)</small></h3>
+                <h3>📖 어류 도감 <small>(<span id="collect-count">0</span>/20)</small></h3>
                 <div id="collection-ui"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- 게임 데이터 및 변수 ---
         let gold = 0, power = 20, gameState = "IDLE", currentMap = 0;
         let isNight = false, reelProgress = 30;
+        let combo = 0;
 
         const maps = [
             { name: "앞바다", cost: 0, unlocked: true },
             { name: "해운대", cost: 500, unlocked: false }
         ];
 
+        // weight: 낮을수록 잡기 힘든 희귀 물고기
         const fishes = [
-            { name: "멸치", price: 10, prob: 0.5, icon: "🐟", maps: [0], time: 0 },
-            { name: "나비고기", price: 30, prob: 0.6, icon: "🐠", maps: [0], time: 1 },
-            { name: "오징어", price: 50, prob: 0.7, icon: "🦑", maps: [0, 1], time: 2 },
-            { name: "꽃게", price: 40, prob: 0.6, icon: "🦀", maps: [0], time: 0 },
-            { name: "복어", price: 70, prob: 0.5, icon: "🐡", maps: [0], time: 1 },
-            { name: "전어", price: 35, prob: 0.6, icon: "🐟", maps: [0], time: 1 },
-            { name: "아귀", price: 150, prob: 0.8, icon: "🏮", maps: [1], time: 2 },
-            { name: "고등어", price: 90, prob: 0.6, icon: "🐟", maps: [1], time: 1 },
-            { name: "갈치", price: 130, prob: 0.7, icon: "🗡️", maps: [1], time: 2 },
-            { name: "문어", price: 200, prob: 0.8, icon: "🐙", maps: [1], time: 0 },
-            { name: "상어", price: 1500, prob: 0.98, icon: "🦈", maps: [1], time: 2 },
-            { name: "해마", price: 400, prob: 0.8, icon: "🐴", maps: [1], time: 1 },
-            { name: "가오리", price: 350, prob: 0.7, icon: "🪁", maps: [1], time: 0 },
-            { name: "넙치", price: 110, prob: 0.6, icon: "🐠", maps: [0, 1], time: 0 },
-            { name: "해파리", price: 80, prob: 0.5, icon: "👾", maps: [0, 1], time: 2 },
-            { name: "참돔", price: 250, prob: 0.8, icon: "🐟", maps: [1], time: 1 },
-            { name: "황금잉어", price: 3000, prob: 0.99, icon: "✨", maps: [0, 1], time: 0 },
-            { name: "고래", price: 7000, prob: 1.0, icon: "🐳", maps: [1], time: 1 },
-            { name: "심해장어", price: 600, prob: 0.9, icon: "🐍", maps: [1], time: 2 },
-            { name: "바다거북", price: 1000, prob: 0.95, icon: "🐢", maps: [1], time: 0 }
+            // 앞바다 (Map 0)
+            { name: "멸치", price: 10, weight: 100, icon: "🐟", maps: [0], time: 0 },
+            { name: "나비고기", price: 30, weight: 80, icon: "🐠", maps: [0], time: 1 },
+            { name: "꽃게", price: 40, weight: 70, icon: "🦀", maps: [0], time: 0 },
+            { name: "복어", price: 70, weight: 50, icon: "🐡", maps: [0], time: 1 },
+            { name: "전어", price: 35, weight: 60, icon: "🐟", maps: [0], time: 1 },
+            { name: "넙치", price: 110, weight: 40, icon: "🐠", maps: [0, 1], time: 0 },
+            
+            // 공통 희귀
+            { name: "오징어", price: 50, weight: 60, icon: "🦑", maps: [0, 1], time: 2 },
+            { name: "해파리", price: 80, weight: 45, icon: "👾", maps: [0, 1], time: 2 },
+            { name: "황금잉어", price: 3000, weight: 5, icon: "✨", maps: [0, 1], time: 0 },
+
+            // 해운대 (Map 1)
+            { name: "고등어", price: 90, weight: 80, icon: "🐟", maps: [1], time: 1 },
+            { name: "갈치", price: 130, weight: 70, icon: "🗡️", maps: [1], time: 2 },
+            { name: "아귀", price: 150, weight: 50, icon: "🏮", maps: [1], time: 2 },
+            { name: "문어", price: 200, weight: 40, icon: "🐙", maps: [1], time: 0 },
+            { name: "가오리", price: 350, weight: 30, icon: "🪁", maps: [1], time: 0 },
+            { name: "해마", price: 400, weight: 25, icon: "🐴", maps: [1], time: 1 },
+            { name: "참돔", price: 250, weight: 35, icon: "🐟", maps: [1], time: 1 },
+            { name: "심해장어", price: 600, weight: 20, icon: "🐍", maps: [1], time: 2 },
+            { name: "바다거북", price: 1000, weight: 15, icon: "🐢", maps: [1], time: 0 },
+            { name: "상어", price: 1500, weight: 10, icon: "🦈", maps: [1], time: 2 },
+            { name: "고래", price: 7000, weight: 2, icon: "🐳", maps: [1], time: 1 }
         ];
 
+        // 초기화
         fishes.forEach((f, i) => { f.id = i; f.count = 0; });
+        loadGame();
 
+        // --- 시간 시스템 ---
         setInterval(() => {
             isNight = !isNight;
-            document.body.className = isNight ? "night-mode" : "day-mode";
+            const body = document.body;
+            body.className = isNight ? "night-mode" : "day-mode";
             document.getElementById('time-text').innerText = isNight ? "밤" : "낮";
             document.getElementById('time-icon').innerText = isNight ? "🌙" : "☀️";
-        }, 20000);
+        }, 15000); // 15초마다 낮밤 변경
 
+        // --- 렌더링 ---
         function renderCollection() {
             const ui = document.getElementById('collection-ui');
             ui.innerHTML = '';
             fishes.forEach(f => {
                 const isFound = f.count > 0;
+                const isRare = f.weight <= 20; 
                 const timeStr = f.time === 0 ? "종일" : (f.time === 1 ? "낮" : "밤");
                 const mapStr = f.maps.map(mIdx => maps[mIdx].name).join('/');
                 
                 ui.innerHTML += `
-                    <div class="fish-card ${isFound ? '' : 'unknown'}">
+                    <div class="fish-card ${isFound ? '' : 'unknown'} ${isFound && isRare ? 'rare' : ''}">
                         <span class="icon">${isFound ? f.icon : '❓'}</span>
                         <span class="name">${isFound ? f.name : '???'}</span>
                         <div class="info-icons">
                             <span class="info-tag">${mapStr}</span>
-                            <span class="info-tag">${timeStr} 출현</span>
-                            <span class="info-tag">${f.count}회 획득</span>
+                            <span class="info-tag">${timeStr}</span>
+                            <span class="info-tag">${f.count}마리</span>
                         </div>
                     </div>`;
             });
             document.getElementById('collect-count').innerText = fishes.filter(f => f.count > 0).length;
         }
 
+        // --- 메인 게임 로직 ---
         function startFishing() {
             if (gameState !== "IDLE") return;
             gameState = "WAITING";
             document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').innerText = "찌를 주시하세요...";
             document.getElementById('bobber').style.display = "block";
             document.getElementById('alert').style.display = "none";
             document.getElementById('result-popup').classList.remove('show');
+            document.getElementById('result-popup').classList.remove('fail');
             
+            // 랜덤 입질 (1~3초)
             setTimeout(() => {
                 if(gameState === "WAITING") {
                     gameState = "BITE";
                     document.getElementById('alert').style.display = "block";
                     document.getElementById('bobber').style.top = "60%";
-                    setTimeout(() => { if(gameState === "BITE") finish(false); }, 1000);
+                    playSound('bite');
+                    
+                    // 입질 반응 시간 체크 (1초 내 미클릭 시 놓침)
+                    setTimeout(() => { 
+                        if(gameState === "BITE") finish('miss'); 
+                    }, 1000);
                 }
-            }, 1000 + Math.random()*2000);
+            }, 1000 + Math.random() * 2000);
         }
 
-        function onScreenClick() {
+        function onScreenClick(e) {
             if (gameState === "BITE") {
+                // 낚시 시작
                 gameState = "REELING";
                 document.getElementById('alert').style.display = "none";
                 document.getElementById('gauge-box').style.display = "block";
-                reelProgress = 30;
-                startReeling();
+                document.getElementById('start-btn').innerText = "클릭해서 당겨!!";
+                reelProgress = 30; 
+                startReelingLogic();
             } else if (gameState === "REELING") {
-                reelProgress += power;
+                // [요청 반영] 내부적으로는 절반만 적용해 난이도 유지
+                reelProgress += power * 0.5; 
+                if(reelProgress > 100) reelProgress = 100;
+                
+                // [요청 반영] 시각적으로는 전체 파워 데미지를 띄움
+                createClickParticle(e.clientX, e.clientY, "+" + power); 
+                
                 if(reelProgress >= 100) finish(true);
-                document.getElementById('gauge-fill').style.width = reelProgress + "%";
+                updateGauge();
             }
         }
 
-        function startReeling() {
+        function startReelingLogic() {
             let loop = setInterval(() => {
                 if(gameState !== "REELING") { clearInterval(loop); return; }
-                reelProgress -= 2.5;
-                document.getElementById('gauge-fill').style.width = reelProgress + "%";
-                if(reelProgress <= 0) finish(false);
-            }, 50);
+                
+                // 맵별 난이도 적용
+                const dropRate = currentMap === 0 ? 1.5 : 2.5; 
+                reelProgress -= dropRate;
+                updateGauge();
+
+                if(reelProgress <= 0) finish('fail'); // 게이지 바닥 -> 실패
+            }, 30);
         }
 
-        function finish(success) {
+        function updateGauge() {
+            const fill = document.getElementById('gauge-fill');
+            fill.style.width = reelProgress + "%";
+            if(reelProgress < 30) fill.style.background = "red";
+            else if(reelProgress > 70) fill.style.background = "#32CD32";
+            else fill.style.background = "orange";
+        }
+
+        // 결과 처리 (성공, 놓침, 끊어짐)
+        function finish(resultType) {
             gameState = "IDLE";
             document.getElementById('gauge-box').style.display = "none";
             document.getElementById('bobber').style.display = "none";
             document.getElementById('bobber').style.top = "55%";
             document.getElementById('start-btn').disabled = false;
+            document.getElementById('start-btn').innerText = "낚시 던지기!";
 
-            if (success) {
-                const currentTimeType = isNight ? 2 : 1;
-                const available = fishes.filter(f => f.maps.includes(currentMap) && (f.time === 0 || f.time === currentTimeType));
-                const fish = available.find(f => Math.random() <= f.prob) || available[0];
-                
-                gold += fish.price;
-                fish.count++;
-                
-                // 결과 팝업 표시
-                showPopup(fish);
-                renderCollection();
+            if (resultType === true) {
+                // 성공
+                handleSuccess();
+            } else if (resultType === 'miss') {
+                // 입질 놓침
+                combo = 0; showCombo();
+                showFailPopup("놓쳤다!", "반응이 너무 느립니다!\n느낌표가 뜨자마자 클릭하세요!");
+            } else if (resultType === 'fail') {
+                // 게이지 부족 (힘겨루기 패배)
+                combo = 0; showCombo();
+                showFailPopup("줄이 끊어짐...", "광클해서 게이지를 유지하세요!\n(파워 강화 필요)");
+            } else {
+                combo = 0; showCombo();
             }
+            
+            saveGame();
             updateUI();
+            renderCollection();
         }
 
-        function showPopup(fish) {
+        function handleSuccess() {
+            combo++;
+            showCombo();
+
+            const currentTimeType = isNight ? 2 : 1;
+            let available = fishes.filter(f => f.maps.includes(currentMap) && (f.time === 0 || f.time === currentTimeType));
+            if(available.length === 0) available = fishes.filter(f => f.maps.includes(currentMap));
+
+            // 가중치 랜덤 로직
+            const totalWeight = available.reduce((acc, f) => acc + f.weight, 0);
+            let randomNum = Math.random() * totalWeight;
+            let caughtFish = available[0];
+
+            for (let f of available) {
+                if (randomNum < f.weight) { caughtFish = f; break; }
+                randomNum -= f.weight;
+            }
+            
+            // 보상 계산
+            const comboBonus = Math.floor(caughtFish.price * (combo - 1) * 0.1);
+            const finalPrice = caughtFish.price + comboBonus;
+            
+            gold += finalPrice;
+            caughtFish.count++;
+            
+            // 팝업 및 효과
+            showPopup(caughtFish, finalPrice, combo > 1);
+            const gw = document.getElementById('game-window');
+            gw.classList.add('shake');
+            setTimeout(()=> gw.classList.remove('shake'), 500);
+        }
+
+        // --- UI 및 팝업 ---
+        function showPopup(fish, finalPrice, isCombo) {
             const popup = document.getElementById('result-popup');
             const timeStr = fish.time === 0 ? "종일" : (fish.time === 1 ? "☀️낮" : "🌙밤");
             const mapStr = fish.maps.map(mIdx => maps[mIdx].name).join('/');
             
             document.getElementById('pop-icon').innerText = fish.icon;
             document.getElementById('pop-name').innerText = fish.name;
-            document.getElementById('pop-price').innerText = `+${fish.price} G`;
+            document.getElementById('pop-price').innerHTML = `+${finalPrice} G ${isCombo ? '<span style="font-size:10px; color:red;">(콤보!)</span>' : ''}`;
             document.getElementById('pop-info').innerText = `${mapStr} | ${timeStr}`;
             
             popup.classList.add('show');
-            setTimeout(() => { popup.classList.remove('show'); }, 2500);
+            setTimeout(() => { popup.classList.remove('show'); }, 2000);
         }
 
+        function showFailPopup(title, msg) {
+            const popup = document.getElementById('result-popup');
+            popup.classList.add('fail');
+            document.getElementById('pop-title').innerText = "실패";
+            document.getElementById('pop-icon').innerText = "💨";
+            document.getElementById('pop-name').innerText = title;
+            document.getElementById('pop-price').innerHTML = `<span style="font-size:12px; color:#d9534f;">${msg.replace(/\n/g, '<br>')}</span>`;
+            document.getElementById('pop-info').innerText = "다시 도전하세요!";
+            popup.classList.add('show');
+            setTimeout(() => { popup.classList.remove('show'); }, 2000);
+        }
+
+        function showCombo() {
+            const comboText = document.getElementById('combo-text');
+            const comboVal = document.getElementById('combo-val');
+            if(combo > 1) {
+                comboVal.innerText = combo;
+                comboText.classList.add('active');
+            } else {
+                comboText.classList.remove('active');
+            }
+        }
+
+        function createClickParticle(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'click-effect';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 600);
+        }
+
+        // --- 상점 기능 ---
         function buyUpgrade(type) {
-            if (gold >= 150) { gold -= 150; power += 10; updateUI(); }
-            else { alert("골드가 부족합니다!"); }
+            if (gold >= 150) { 
+                gold -= 150; 
+                power += 5; 
+                saveGame();
+                updateUI(); 
+                alert("강화 성공! 파워가 증가했습니다.");
+            } else { alert("골드가 부족합니다!"); }
         }
 
+        // [수정된 맵 이동 및 UI 갱신 로직]
         function unlockMap(id) {
             if (currentMap === id) return;
-            if (gold >= 500 || maps[id].unlocked) {
-                if (!maps[id].unlocked) { gold -= 500; maps[id].unlocked = true; }
-                currentMap = id;
-                document.getElementById('map-name').innerText = "현재: " + maps[id].name;
-                document.getElementById('map-unlock-btn').innerText = maps[id].name + " 이동 중";
-            } else { alert("골드가 부족합니다!"); }
-            updateUI();
+
+            if (!maps[id].unlocked) {
+                if (gold >= maps[id].cost) {
+                    gold -= maps[id].cost;
+                    maps[id].unlocked = true;
+                    alert(`🎉 [${maps[id].name}] 낚시터가 해금되었습니다!`);
+                } else {
+                    alert("골드가 부족합니다!");
+                    return;
+                }
+            }
+
+            currentMap = id;
+            document.getElementById('map-name').innerText = "현재: " + maps[id].name;
+            combo = 0; showCombo();
+            updateUI(); 
+            saveGame();
+            showFailPopup("이동 완료!", `${maps[id].name}에 도착했습니다.`);
         }
 
         function updateUI() {
-            document.getElementById('gold').innerText = gold;
+            document.getElementById('gold').innerText = gold.toLocaleString();
             document.getElementById('power-val').innerText = power;
+
+            // 맵 이동 버튼 리스트 동적 생성
+            const mapContainer = document.getElementById('map-btn-container');
+            mapContainer.innerHTML = "";
+
+            maps.forEach((m, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "upgrade-btn";
+                btn.style.marginTop = "0";
+
+                if (currentMap === idx) {
+                    btn.innerText = `📍 ${m.name} (현재 위치)`;
+                    btn.disabled = true;
+                } else {
+                    if (m.unlocked) {
+                        btn.innerText = `✈️ ${m.name} 이동 (무료)`;
+                        btn.style.background = "#28a745";
+                        btn.onclick = () => unlockMap(idx);
+                    } else {
+                        btn.innerText = `🔓 ${m.name} 해금 (${m.cost} G)`;
+                        btn.style.background = "#FF7F50";
+                        btn.onclick = () => unlockMap(idx);
+                    }
+                }
+                mapContainer.appendChild(btn);
+            });
         }
 
-        renderCollection();
+        function playSound(type) { /* 사운드 연결용 */ }
+
+        // --- 저장/로드 ---
+        function saveGame() {
+            const data = { gold, power, currentMap, mapsUnlocked: maps.map(m => m.unlocked), fishCounts: fishes.map(f => f.count) };
+            localStorage.setItem('fishingTycoonSave_v3', JSON.stringify(data));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('fishingTycoonSave_v3');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    gold = data.gold || 0;
+                    power = data.power || 20;
+                    currentMap = data.currentMap || 0;
+                    if(data.mapsUnlocked) data.mapsUnlocked.forEach((ul, i) => { if(maps[i]) maps[i].unlocked = ul; });
+                    if(data.fishCounts) data.fishCounts.forEach((cnt, i) => { if(fishes[i]) fishes[i].count = cnt; });
+                    if(currentMap === 1) document.getElementById('map-name').innerText = "현재: " + maps[1].name;
+                } catch(e) {}
+            }
+            updateUI();
+        }
+
+        function resetData() {
+            if(confirm("정말 모든 데이터를 삭제하고 처음부터 시작하시겠습니까?")) {
+                localStorage.removeItem('fishingTycoonSave_v3');
+                location.reload();
+            }
+        }
     </script>
 </body>
 </html>
