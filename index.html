@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>피셔맨 타이쿤 : 인포메이션 에디션</title>
+    <title>피셔맨 타이쿤 : 레전드 오브 빅피쉬</title>
     <style>
         :root {
             --sky-day: #87CEEB; --sea-day: #1E90FF;
@@ -13,7 +13,7 @@
         .day-mode { --sky: var(--sky-day); --sea: var(--sea-day); --panel-bg: white; --text: black; }
         .night-mode { --sky: var(--sky-night); --sea: var(--sea-night); --panel-bg: #252545; --text: #e0e0e0; background: #0f0f1b; }
 
-        /* 게임 화면 및 효과 */
+        /* 게임 화면 */
         #game-window { 
             position: relative; width: 480px; height: 320px; 
             background: linear-gradient(to bottom, var(--sky) 50%, var(--sea) 50%); 
@@ -32,38 +32,43 @@
         #combo-text { position: absolute; top: 60px; right: 20px; font-size: 24px; font-weight: bold; color: #FFD700; text-shadow: 2px 2px 0 #000; opacity: 0; transition: 0.3s; transform: scale(0.5); }
         #combo-text.active { opacity: 1; transform: scale(1.2); }
 
-        /* 결과 창 팝업 (성공 - 기본) */
+        /* 팝업 공통 */
         #result-popup { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-            width: 220px; background: rgba(255,255,255,0.98); border: 4px solid #FF7F50;
+            width: 240px; background: rgba(255,255,255,0.98); border: 4px solid #FF7F50;
             border-radius: 20px; text-align: center; padding: 20px; z-index: 100; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             color: #333; box-shadow: 0 15px 30px rgba(0,0,0,0.4);
         }
         #result-popup.show { transform: translate(-50%, -50%) scale(1); }
-
-        /* 결과 창 팝업 (실패) */
         #result-popup.fail { border-color: #666; background: rgba(245, 245, 245, 0.98); }
         #result-popup.fail #pop-name { color: #555 !important; }
         #result-popup.fail #pop-price { color: #d9534f !important; font-weight: normal; }
-        
-        /* 결과 창 팝업 (시스템/이동) */
         #result-popup.system { border-color: #1E90FF; background: rgba(240, 248, 255, 0.98); }
         #result-popup.system #pop-name { color: #1E90FF !important; }
 
-        /* 상세 정보 팝업 (모달) */
+        /* 상세 정보 모달 */
         #detail-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 200; display: none;
-            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.6); z-index: 200; display: none;
+            justify-content: center; align-items: center; backdrop-filter: blur(2px);
         }
         #detail-content {
-            background: white; width: 300px; padding: 20px; border-radius: 20px;
-            text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            background: white; width: 320px; padding: 25px; border-radius: 20px;
+            text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             border: 4px solid #FF7F50;
         }
-        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #888; }
-        .detail-desc { font-size: 13px; color: #555; margin: 15px 0; line-height: 1.5; background: #f9f9f9; padding: 10px; border-radius: 10px; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 28px; cursor: pointer; color: #888; transition: 0.2s; }
+        .close-btn:hover { color: #333; }
+        .detail-desc { font-size: 13px; color: #555; margin: 15px 0; line-height: 1.5; background: #f9f9f9; padding: 12px; border-radius: 10px; border: 1px solid #eee; }
 
+        /* 기록 표시 박스 */
+        .record-box {
+            background: #fff8e1; border: 1px solid #FFD700; border-radius: 10px;
+            padding: 10px; margin-top: 10px; font-size: 13px; color: #555;
+        }
+        .record-val { font-weight: bold; color: #333; font-size: 14px; }
+
+        /* UI 레이아웃 */
         .container { width: 490px; margin-top: 15px; }
         .stats { background: var(--panel-bg); color: var(--text); padding: 12px; border-radius: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 2px solid #ddd; margin-bottom: 10px; transition: 0.5s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
@@ -73,18 +78,31 @@
         
         #collection-ui { 
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; 
-            height: 240px; overflow-y: auto; padding-right: 5px;
+            height: 260px; overflow-y: auto; padding-right: 5px;
         }
         #collection-ui::-webkit-scrollbar { width: 6px; }
         #collection-ui::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
 
+        /* 물고기 카드 및 특대형 효과 */
         .fish-card { 
             text-align: center; padding: 10px; border: 1px solid #eee; 
             border-radius: 10px; background: rgba(127, 127, 127, 0.1); position: relative; cursor: pointer; transition: 0.2s;
         }
-        .fish-card:hover { background: rgba(127, 127, 127, 0.2); transform: translateY(-2px); }
+        .fish-card:hover { transform: translateY(-3px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
         .fish-card.unknown { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
-        .fish-card.rare { border: 2px solid #FFD700; background: rgba(255, 215, 0, 0.1); }
+        .fish-card.rare { border: 2px solid #aaa; background: rgba(200, 200, 200, 0.1); }
+        
+        /* 특대형(Giant) 전용 스타일 - 요청사항 반영 */
+        .fish-card.giant-catch { 
+            border: 2px solid #FFD700; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,215,0,0.2));
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            animation: glow 2s infinite alternate;
+        }
+        .crown-icon { position: absolute; top: -8px; right: -8px; font-size: 20px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); z-index: 5; }
+        
+        @keyframes glow { from { box-shadow: 0 0 5px #FFD700; } to { box-shadow: 0 0 15px #FFA500; } }
+
         .fish-card .icon { font-size: 28px; display: block; margin-bottom: 2px; }
         .fish-card .name { font-size: 12px; font-weight: bold; margin-top: 4px; display: block; }
         
@@ -99,7 +117,6 @@
         .upgrade-btn:hover { background: #ff6b3d; }
         .upgrade-btn:disabled { background: #555 !important; cursor: default; }
 
-        /* 클릭 파티클 효과 */
         .click-effect {
             position: absolute; pointer-events: none; animation: fadeUp 0.6s ease-out forwards;
             font-weight: bold; color: white; text-shadow: 0 0 3px black; font-size: 16px;
@@ -119,10 +136,13 @@
         
         <div id="result-popup">
             <div id="pop-title" style="font-size: 12px; color: #666;">성공!</div>
-            <div id="pop-icon" style="font-size: 60px; margin: 10px 0;">🐟</div>
+            <div id="pop-icon" style="font-size: 60px; margin: 5px 0;">🐟</div>
             <div id="pop-name" style="font-size: 20px; font-weight: bold; color: #FF7F50;">멸치</div>
-            <div id="pop-price" style="font-size: 16px; margin-bottom: 10px; font-weight:bold;">+10 G</div>
-            <div id="pop-info" style="font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 8px;">📍앞바다 | ☀️낮</div>
+            <div id="pop-rank" style="font-size: 14px; font-weight: bold; margin: 5px 0; color: #333;">[중형]</div>
+            <div id="pop-size" style="font-size: 11px; color: #555; margin-bottom: 5px;">10cm / 0.5kg</div>
+            
+            <div id="pop-price" style="font-size: 16px; margin-bottom: 5px; font-weight:bold;">+10 G</div>
+            <div id="pop-info" style="font-size: 10px; color: #888; border-top: 1px solid #eee; padding-top: 5px;">📍앞바다 | ☀️낮</div>
         </div>
 
         <div id="map-name" style="position:absolute; bottom:10px; right:20px; font-weight:bold; background:rgba(0,0,0,0.6); color:white; padding:5px 12px; border-radius:15px; font-size:12px;">현재: 앞바다</div>
@@ -163,12 +183,22 @@
     <div id="detail-modal" onclick="closeDetail()">
         <div id="detail-content" onclick="event.stopPropagation()">
             <span class="close-btn" onclick="closeDetail()">&times;</span>
+            <div id="detail-crown" style="font-size: 30px; position:absolute; top:20px; left:20px; display:none;">👑</div>
             <div id="detail-icon" style="font-size: 80px; margin-bottom: 10px;">🐟</div>
             <div id="detail-name" style="font-size: 24px; font-weight: bold; color: #333;">물고기 이름</div>
-            <div id="detail-desc" class="detail-desc">설명이 들어갑니다.</div>
+            <div id="detail-desc" class="detail-desc">설명</div>
+            
             <div class="stats" style="margin: 0; padding: 8px; font-size: 14px;">
-                <span>판매가: <span id="detail-price">10</span> G</span>
+                <span>기본가: <span id="detail-price">10</span> G</span>
             </div>
+
+            <div class="record-box">
+                <div style="margin-bottom:4px;">🏆 나의 최고 기록</div>
+                <div>길이: <span id="rec-len" class="record-val">-</span> cm</div>
+                <div>무게: <span id="rec-wgt" class="record-val">-</span> kg</div>
+                <div id="rec-rank-text" style="color:#FF7F50; font-weight:bold; margin-top:5px;"></div>
+            </div>
+
             <div id="detail-info" style="margin-top: 10px; font-size: 12px; color: #666;">
                 서식지: 앞바다 / 시간: 낮
             </div>
@@ -176,7 +206,6 @@
     </div>
 
     <script>
-        // --- 게임 데이터 ---
         let gold = 0, power = 20, gameState = "IDLE", currentMap = 0;
         let isNight = false, reelProgress = 30;
         let combo = 0;
@@ -186,61 +215,72 @@
             { name: "해운대", cost: 500, unlocked: false }
         ];
 
+        // [신규] minLen(cm), maxLen, minWgt(kg), maxWgt 데이터 추가
+        // [신규] 저장 데이터: maxLenRecord, maxWgtRecord, hasGiant
         const fishes = [
             // 앞바다
-            { name: "멸치", price: 10, weight: 100, icon: "🐟", maps: [0], time: 0, desc: "작고 귀여운 멸치입니다. 볶음용으로 딱입니다." },
-            { name: "나비고기", price: 30, weight: 80, icon: "🐠", maps: [0], time: 1, desc: "화려한 무늬를 가진 열대어입니다." },
-            { name: "꽃게", price: 40, weight: 70, icon: "🦀", maps: [0], time: 0, desc: "옆으로 걷는 친구입니다. 집게발을 조심하세요." },
-            { name: "복어", price: 70, weight: 50, icon: "🐡", maps: [0], time: 1, desc: "화나면 몸을 부풀립니다. 독이 있을지도 모릅니다." },
-            { name: "전어", price: 35, weight: 60, icon: "🐟", maps: [0], time: 1, desc: "집 나간 며느리도 돌아오게 한다는 가을 생선입니다." },
-            { name: "넙치", price: 110, weight: 40, icon: "🐠", maps: [0, 1], time: 0, desc: "바닥에 납작하게 붙어 사는 물고기입니다." },
+            { name: "멸치", price: 10, weight: 100, icon: "🐟", maps: [0], time: 0, desc: "볶음용으로 딱인 작은 친구입니다.", minLen: 5, maxLen: 15, minWgt: 0.01, maxWgt: 0.05 },
+            { name: "나비고기", price: 30, weight: 80, icon: "🐠", maps: [0], time: 1, desc: "산호초 사이를 누비는 화려한 물고기입니다.", minLen: 10, maxLen: 20, minWgt: 0.1, maxWgt: 0.3 },
+            { name: "꽃게", price: 40, weight: 70, icon: "🦀", maps: [0], time: 0, desc: "밥도둑의 자질을 가지고 있습니다.", minLen: 8, maxLen: 18, minWgt: 0.2, maxWgt: 0.5 },
+            { name: "복어", price: 70, weight: 50, icon: "🐡", maps: [0], time: 1, desc: "전문가만 요리할 수 있는 위험한 녀석입니다.", minLen: 15, maxLen: 35, minWgt: 0.5, maxWgt: 1.5 },
+            { name: "전어", price: 35, weight: 60, icon: "🐟", maps: [0], time: 1, desc: "가을이 되면 집 나간 며느리도 돌아옵니다.", minLen: 15, maxLen: 25, minWgt: 0.1, maxWgt: 0.3 },
+            { name: "넙치", price: 110, weight: 40, icon: "🐠", maps: [0, 1], time: 0, desc: "바닥에 붙어 사는 자연산 광어입니다.", minLen: 30, maxLen: 80, minWgt: 1.0, maxWgt: 5.0 },
             
             // 공통/희귀
-            { name: "오징어", price: 50, weight: 60, icon: "🦑", maps: [0, 1], time: 2, desc: "다리가 10개인 연체동물입니다." },
-            { name: "해파리", price: 80, weight: 45, icon: "👾", maps: [0, 1], time: 2, desc: "흐물흐물하고 쏘이면 아픕니다." },
-            { name: "황금잉어", price: 3000, weight: 5, icon: "✨", maps: [0, 1], time: 0, desc: "전설 속의 황금빛 잉어입니다. 행운을 가져다줍니다!" },
+            { name: "오징어", price: 50, weight: 60, icon: "🦑", maps: [0, 1], time: 2, desc: "다리가 10개입니다. 회로 먹으면 맛있습니다.", minLen: 20, maxLen: 50, minWgt: 0.3, maxWgt: 1.0 },
+            { name: "해파리", price: 80, weight: 45, icon: "👾", maps: [0, 1], time: 2, desc: "바다의 불청객. 쏘이면 매우 아픕니다.", minLen: 10, maxLen: 40, minWgt: 0.1, maxWgt: 2.0 },
+            { name: "황금잉어", price: 3000, weight: 5, icon: "✨", maps: [0, 1], time: 0, desc: "전설의 황금빛 잉어. 행운 그 자체입니다.", minLen: 40, maxLen: 100, minWgt: 2.0, maxWgt: 10.0 },
 
             // 해운대
-            { name: "고등어", price: 90, weight: 80, icon: "🐟", maps: [1], time: 1, desc: "등 푸른 생선의 대표주자입니다." },
-            { name: "갈치", price: 130, weight: 70, icon: "🗡️", maps: [1], time: 2, desc: "칼처럼 은색으로 빛나는 긴 물고기입니다." },
-            { name: "아귀", price: 150, weight: 50, icon: "🏮", maps: [1], time: 2, desc: "못생겼지만 맛은 좋은 심해어입니다." },
-            { name: "문어", price: 200, weight: 40, icon: "🐙", maps: [1], time: 0, desc: "지능이 높은 바다의 현자입니다." },
-            { name: "가오리", price: 350, weight: 30, icon: "🪁", maps: [1], time: 0, desc: "연처럼 바다를 날아다닙니다." },
-            { name: "해마", price: 400, weight: 25, icon: "🐴", maps: [1], time: 1, desc: "말을 닮은 독특한 물고기입니다." },
-            { name: "참돔", price: 250, weight: 35, icon: "🐟", maps: [1], time: 1, desc: "바다의 여왕이라 불리는 고급 어종입니다." },
-            { name: "심해장어", price: 600, weight: 20, icon: "🐍", maps: [1], time: 2, desc: "깊은 바다에 사는 거대한 장어입니다." },
-            { name: "바다거북", price: 1000, weight: 15, icon: "🐢", maps: [1], time: 0, desc: "장수의 상징입니다. 놓아주는 게 좋을까요?" },
-            { name: "상어", price: 1500, weight: 10, icon: "🦈", maps: [1], time: 2, desc: "바다의 포식자입니다. 조심하세요!" },
-            { name: "고래", price: 7000, weight: 2, icon: "🐳", maps: [1], time: 1, desc: "바다의 지배자. 잡았다면 당신은 전설입니다." }
+            { name: "고등어", price: 90, weight: 80, icon: "🐟", maps: [1], time: 1, desc: "국민 생선입니다. 구이로 최고입니다.", minLen: 25, maxLen: 45, minWgt: 0.3, maxWgt: 0.8 },
+            { name: "갈치", price: 130, weight: 70, icon: "🗡️", maps: [1], time: 2, desc: "은색 갑옷을 입은 바다의 검입니다.", minLen: 50, maxLen: 150, minWgt: 0.5, maxWgt: 2.0 },
+            { name: "아귀", price: 150, weight: 50, icon: "🏮", maps: [1], time: 2, desc: "입이 매우 큽니다. 찜 요리의 주역.", minLen: 30, maxLen: 60, minWgt: 2.0, maxWgt: 5.0 },
+            { name: "문어", price: 200, weight: 40, icon: "🐙", maps: [1], time: 0, desc: "지능이 높고 위장술의 귀재입니다.", minLen: 40, maxLen: 100, minWgt: 1.0, maxWgt: 10.0 },
+            { name: "가오리", price: 350, weight: 30, icon: "🪁", maps: [1], time: 0, desc: "웃는 얼굴을 가진 바다의 연.", minLen: 40, maxLen: 100, minWgt: 2.0, maxWgt: 8.0 },
+            { name: "해마", price: 400, weight: 25, icon: "🐴", maps: [1], time: 1, desc: "수직으로 헤엄치는 신기한 물고기입니다.", minLen: 5, maxLen: 15, minWgt: 0.01, maxWgt: 0.05 },
+            { name: "참돔", price: 250, weight: 35, icon: "🐟", maps: [1], time: 1, desc: "생선의 왕. 낚시꾼들의 로망입니다.", minLen: 30, maxLen: 90, minWgt: 1.5, maxWgt: 8.0 },
+            { name: "심해장어", price: 600, weight: 20, icon: "🐍", maps: [1], time: 2, desc: "어두운 심해에 사는 거대한 장어입니다.", minLen: 100, maxLen: 250, minWgt: 5.0, maxWgt: 20.0 },
+            { name: "바다거북", price: 1000, weight: 15, icon: "🐢", maps: [1], time: 0, desc: "용왕님의 사신일지도 모릅니다.", minLen: 80, maxLen: 150, minWgt: 50.0, maxWgt: 150.0 },
+            { name: "상어", price: 1500, weight: 10, icon: "🦈", maps: [1], time: 2, desc: "바다의 최상위 포식자. 이빨이 날카롭습니다.", minLen: 200, maxLen: 500, minWgt: 100.0, maxWgt: 500.0 },
+            { name: "고래", price: 7000, weight: 2, icon: "🐳", maps: [1], time: 1, desc: "바다 그 자체. 압도적인 크기를 자랑합니다.", minLen: 1000, maxLen: 3000, minWgt: 1000.0, maxWgt: 5000.0 }
         ];
 
-        // 초기화
-        fishes.forEach((f, i) => { f.id = i; f.count = 0; });
+        fishes.forEach((f, i) => { 
+            f.id = i; 
+            f.count = 0; 
+            f.maxLenRecord = 0; // 최고 길이 기록
+            f.maxWgtRecord = 0; // 최고 무게 기록
+            f.hasGiant = false; // 특대형 획득 여부
+        });
+        
         loadGame();
 
-        // --- 시간 시스템 ---
+        // --- 시간 시스템 (60초로 변경) ---
         setInterval(() => {
             isNight = !isNight;
             const body = document.body;
             body.className = isNight ? "night-mode" : "day-mode";
             document.getElementById('time-text').innerText = isNight ? "밤" : "낮";
             document.getElementById('time-icon').innerText = isNight ? "🌙" : "☀️";
-        }, 15000); 
+        }, 60000); // 1분 (60000ms)
 
-        // --- 렌더링 (도감) ---
+        // --- 도감 렌더링 ---
         function renderCollection() {
             const ui = document.getElementById('collection-ui');
             ui.innerHTML = '';
             fishes.forEach(f => {
                 const isFound = f.count > 0;
-                const isRare = f.weight <= 20; 
                 const timeStr = f.time === 0 ? "종일" : (f.time === 1 ? "낮" : "밤");
                 const mapStr = f.maps.map(mIdx => maps[mIdx].name).join('/');
                 
-                // [신규] 클릭 시 상세 정보 팝업 호출 (onclick)
+                // [신규] 특대형(hasGiant)이 있으면 왕관과 특수 효과 추가
+                const giantClass = f.hasGiant ? 'giant-catch' : '';
+                const crownHtml = f.hasGiant ? '<span class="crown-icon">👑</span>' : '';
+
                 ui.innerHTML += `
-                    <div class="fish-card ${isFound ? '' : 'unknown'} ${isFound && isRare ? 'rare' : ''}" 
+                    <div class="fish-card ${isFound ? '' : 'unknown'} ${giantClass}" 
                          onclick="${isFound ? `showFishDetail(${f.id})` : ''}">
+                        ${crownHtml}
                         <span class="icon">${isFound ? f.icon : '❓'}</span>
                         <span class="name">${isFound ? f.name : '???'}</span>
                         <div class="info-icons">
@@ -253,18 +293,29 @@
             document.getElementById('collect-count').innerText = fishes.filter(f => f.count > 0).length;
         }
 
-        // --- 도감 상세 정보 팝업 기능 ---
         function showFishDetail(id) {
             const fish = fishes[id];
             const modal = document.getElementById('detail-modal');
-            const timeStr = fish.time === 0 ? "종일" : (fish.time === 1 ? "☀️낮" : "🌙밤");
-            const mapStr = fish.maps.map(mIdx => maps[mIdx].name).join(', ');
-
+            
             document.getElementById('detail-icon').innerText = fish.icon;
             document.getElementById('detail-name').innerText = fish.name;
-            document.getElementById('detail-desc').innerText = fish.desc || "설명이 없습니다.";
+            document.getElementById('detail-desc').innerText = fish.desc;
             document.getElementById('detail-price').innerText = fish.price;
-            document.getElementById('detail-info').innerText = `서식지: ${mapStr} | 출현: ${timeStr}`;
+            
+            // 최고 기록 표시
+            document.getElementById('rec-len').innerText = fish.maxLenRecord.toFixed(1);
+            document.getElementById('rec-wgt').innerText = fish.maxWgtRecord.toFixed(2);
+            
+            const crown = document.getElementById('detail-crown');
+            const rankText = document.getElementById('rec-rank-text');
+            
+            if(fish.hasGiant) {
+                crown.style.display = "block";
+                rankText.innerText = "👑 특대형 보유 중!";
+            } else {
+                crown.style.display = "none";
+                rankText.innerText = "";
+            }
 
             modal.style.display = "flex";
         }
@@ -282,7 +333,6 @@
             document.getElementById('bobber').style.display = "block";
             document.getElementById('alert').style.display = "none";
             
-            // 모든 팝업 스타일 초기화 (버그 수정)
             const popup = document.getElementById('result-popup');
             popup.classList.remove('show', 'fail', 'system');
 
@@ -292,10 +342,7 @@
                     document.getElementById('alert').style.display = "block";
                     document.getElementById('bobber').style.top = "60%";
                     playSound('bite');
-                    
-                    setTimeout(() => { 
-                        if(gameState === "BITE") finish('miss'); 
-                    }, 1000);
+                    setTimeout(() => { if(gameState === "BITE") finish('miss'); }, 1000);
                 }
             }, 1000 + Math.random() * 2000);
         }
@@ -347,18 +394,17 @@
                 handleSuccess();
             } else if (resultType === 'miss') {
                 combo = 0; showCombo();
-                showFailPopup("놓쳤다!", "반응이 너무 느립니다!\n느낌표가 뜨자마자 클릭하세요!");
+                showFailPopup("놓쳤다!", "반응이 너무 느립니다!");
             } else if (resultType === 'fail') {
                 combo = 0; showCombo();
-                showFailPopup("줄이 끊어짐...", "광클해서 게이지를 유지하세요!\n(파워 강화 필요)");
-            } else {
-                combo = 0; showCombo();
+                showFailPopup("줄이 끊어짐...", "파워가 부족합니다!");
             }
             saveGame();
             updateUI();
             renderCollection();
         }
 
+        // --- 성공 처리 (핵심 로직 변경) ---
         function handleSuccess() {
             combo++;
             showCombo();
@@ -373,63 +419,109 @@
                 if (randomNum < f.weight) { caughtFish = f; break; }
                 randomNum -= f.weight;
             }
+
+            // [신규] 크기 및 등급 계산 로직
+            const sizeRatio = Math.random(); // 0.0 ~ 1.0 (크기 비율)
             
-            const comboBonus = Math.floor(caughtFish.price * (combo - 1) * 0.1);
-            const finalPrice = caughtFish.price + comboBonus;
-            gold += finalPrice;
+            // 등급 결정 (5구간)
+            let rank = "";
+            let rankColor = "#333";
+            if (sizeRatio < 0.2) { rank = "초소형"; rankColor = "#999"; }
+            else if (sizeRatio < 0.4) { rank = "소형"; rankColor = "#666"; }
+            else if (sizeRatio < 0.6) { rank = "중형"; rankColor = "#333"; }
+            else if (sizeRatio < 0.8) { rank = "대형"; rankColor = "#1E90FF"; }
+            else { rank = "특대형"; rankColor = "#FF4500"; }
+
+            // 실제 수치 계산 (최소 + (차이 * 비율))
+            const currentLen = caughtFish.minLen + (caughtFish.maxLen - caughtFish.minLen) * sizeRatio;
+            const currentWgt = caughtFish.minWgt + (caughtFish.maxWgt - caughtFish.minWgt) * sizeRatio;
+
+            // 기록 갱신
             caughtFish.count++;
+            if (currentLen > caughtFish.maxLenRecord) caughtFish.maxLenRecord = currentLen;
+            if (currentWgt > caughtFish.maxWgtRecord) caughtFish.maxWgtRecord = currentWgt;
             
-            showPopup(caughtFish, finalPrice, combo > 1);
+            // 특대형 달성 시 기록
+            let isNewGiant = false;
+            if (rank === "특대형" && !caughtFish.hasGiant) {
+                caughtFish.hasGiant = true;
+                isNewGiant = true;
+            }
+
+            // 가격 보너스 (크기가 클수록 비쌈, 최대 1.5배)
+            const sizeBonus = 1 + (sizeRatio * 0.5);
+            const comboBonusVal = Math.floor(caughtFish.price * (combo - 1) * 0.1);
+            const finalPrice = Math.floor(caughtFish.price * sizeBonus) + comboBonusVal;
+            gold += finalPrice;
+
+            // 팝업 표시
+            showPopup(caughtFish, finalPrice, rank, rankColor, currentLen, currentWgt, isNewGiant);
             
             const gw = document.getElementById('game-window');
             gw.classList.add('shake');
             setTimeout(()=> gw.classList.remove('shake'), 500);
         }
 
-        // --- 팝업 UI 시스템 ---
-        function showPopup(fish, finalPrice, isCombo) {
+        // [수정] 팝업에 크기 및 등급 표시
+        function showPopup(fish, finalPrice, rank, rankColor, len, wgt, isNewGiant) {
             const popup = document.getElementById('result-popup');
-            // [버그 수정] 기존 클래스 제거 (fail, system 등)
-            popup.classList.remove('fail', 'system'); 
+            popup.classList.remove('fail', 'system');
             
-            const timeStr = fish.time === 0 ? "종일" : (fish.time === 1 ? "☀️낮" : "🌙밤");
-            const mapStr = fish.maps.map(mIdx => maps[mIdx].name).join('/');
+            document.getElementById('pop-title').innerText = isNewGiant ? "👑 특대형 발견! 👑" : "낚시 성공!";
+            document.getElementById('pop-title').style.color = isNewGiant ? "#FFD700" : "#666";
             
-            document.getElementById('pop-title').innerText = "성공!"; // 타이틀 초기화
             document.getElementById('pop-icon').innerText = fish.icon;
             document.getElementById('pop-name').innerText = fish.name;
-            document.getElementById('pop-price').innerHTML = `+${finalPrice} G ${isCombo ? '<span style="font-size:10px; color:red;">(콤보!)</span>' : ''}`;
-            document.getElementById('pop-info').innerText = `${mapStr} | ${timeStr}`;
+            
+            // 등급 및 사이즈 표시
+            const rankDiv = document.getElementById('pop-rank');
+            if(!rankDiv) { // 없으면 생성
+                 const r = document.createElement('div'); r.id='pop-rank'; 
+                 document.getElementById('pop-name').after(r);
+            }
+            document.getElementById('pop-rank').innerText = `[${rank}]`;
+            document.getElementById('pop-rank').style.color = rankColor;
+
+            const sizeDiv = document.getElementById('pop-size');
+            if(!sizeDiv) {
+                 const s = document.createElement('div'); s.id='pop-size';
+                 document.getElementById('pop-rank').after(s);
+            }
+            document.getElementById('pop-size').innerText = `${len.toFixed(1)}cm / ${wgt.toFixed(2)}kg`;
+
+            document.getElementById('pop-price').innerText = `+${finalPrice} G`;
             
             popup.classList.add('show');
-            setTimeout(() => { popup.classList.remove('show'); }, 2000);
+            setTimeout(() => { popup.classList.remove('show'); }, 2500);
         }
 
         function showFailPopup(title, msg) {
             const popup = document.getElementById('result-popup');
-            popup.classList.remove('system'); // 시스템 클래스 제거
-            popup.classList.add('fail');      // 실패 클래스 추가
-            
+            popup.classList.remove('system');
+            popup.classList.add('fail');
             document.getElementById('pop-title').innerText = "실패";
             document.getElementById('pop-icon').innerText = "💨";
             document.getElementById('pop-name').innerText = title;
-            document.getElementById('pop-price').innerHTML = `<span style="font-size:12px; color:#d9534f;">${msg.replace(/\n/g, '<br>')}</span>`;
-            document.getElementById('pop-info').innerText = "다시 도전하세요!";
+            document.getElementById('pop-price').innerHTML = `<span style="font-size:12px; color:#d9534f;">${msg}</span>`;
+            
+            // 사이즈 정보 숨기기
+            if(document.getElementById('pop-rank')) document.getElementById('pop-rank').innerText = "";
+            if(document.getElementById('pop-size')) document.getElementById('pop-size').innerText = "";
+
             popup.classList.add('show');
             setTimeout(() => { popup.classList.remove('show'); }, 2000);
         }
 
-        // [신규] 맵 이동 등 시스템 알림용 팝업 (실패로 뜨지 않게 수정됨)
         function showSystemPopup(title, msg) {
             const popup = document.getElementById('result-popup');
-            popup.classList.remove('fail');   // 실패 클래스 제거
-            popup.classList.add('system');    // 시스템 클래스 추가
-
+            popup.classList.remove('fail');
+            popup.classList.add('system');
             document.getElementById('pop-title').innerText = "알림";
             document.getElementById('pop-icon').innerText = "✈️";
             document.getElementById('pop-name').innerText = title;
             document.getElementById('pop-price').innerHTML = `<span style="font-size:12px; color:#1E90FF;">${msg}</span>`;
-            document.getElementById('pop-info').innerText = "즐거운 낚시 되세요!";
+            if(document.getElementById('pop-rank')) document.getElementById('pop-rank').innerText = "";
+            if(document.getElementById('pop-size')) document.getElementById('pop-size').innerText = "";
             popup.classList.add('show');
             setTimeout(() => { popup.classList.remove('show'); }, 2000);
         }
@@ -456,31 +548,19 @@
         }
 
         function buyUpgrade(type) {
-            if (gold >= 150) { 
-                gold -= 150; power += 5; 
-                saveGame(); updateUI(); 
-                alert("강화 성공! 파워가 증가했습니다.");
-            } else { alert("골드가 부족합니다!"); }
+            if (gold >= 150) { gold -= 150; power += 5; saveGame(); updateUI(); alert("강화 성공!"); } 
+            else { alert("골드가 부족합니다!"); }
         }
 
         function unlockMap(id) {
             if (currentMap === id) return;
             if (!maps[id].unlocked) {
-                if (gold >= maps[id].cost) {
-                    gold -= maps[id].cost;
-                    maps[id].unlocked = true;
-                } else {
-                    alert("골드가 부족합니다!");
-                    return;
-                }
+                if (gold >= maps[id].cost) { gold -= maps[id].cost; maps[id].unlocked = true; } 
+                else { alert("골드가 부족합니다!"); return; }
             }
             currentMap = id;
             document.getElementById('map-name').innerText = "현재: " + maps[id].name;
-            
-            // [수정] 콤보 초기화 코드 삭제 (combo = 0 삭제함) -> 콤보 유지됨
-            // [수정] 실패 팝업 대신 시스템 팝업 사용
             showSystemPopup("이동 완료!", `${maps[id].name}에 도착했습니다.`);
-            
             updateUI(); saveGame();
         }
 
@@ -513,13 +593,24 @@
 
         function playSound(type) {}
 
+        // --- 저장/로드 (V4: 기록 데이터 추가 저장) ---
         function saveGame() {
-            const data = { gold, power, currentMap, mapsUnlocked: maps.map(m => m.unlocked), fishCounts: fishes.map(f => f.count) };
-            localStorage.setItem('fishingTycoonSave_v3', JSON.stringify(data));
+            const data = { 
+                gold, power, currentMap, 
+                mapsUnlocked: maps.map(m => m.unlocked), 
+                // 물고기별 데이터 (마리수, 최고길이, 최고무게, 특대형여부)
+                fishData: fishes.map(f => ({
+                    c: f.count, 
+                    l: f.maxLenRecord, 
+                    w: f.maxWgtRecord, 
+                    g: f.hasGiant
+                }))
+            };
+            localStorage.setItem('fishingTycoonSave_v4', JSON.stringify(data));
         }
 
         function loadGame() {
-            const saved = localStorage.getItem('fishingTycoonSave_v3');
+            const saved = localStorage.getItem('fishingTycoonSave_v4');
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
@@ -527,7 +618,21 @@
                     power = data.power || 20;
                     currentMap = data.currentMap || 0;
                     if(data.mapsUnlocked) data.mapsUnlocked.forEach((ul, i) => { if(maps[i]) maps[i].unlocked = ul; });
-                    if(data.fishCounts) data.fishCounts.forEach((cnt, i) => { if(fishes[i]) fishes[i].count = cnt; });
+                    
+                    // V4 데이터 로드
+                    if(data.fishData) {
+                        data.fishData.forEach((fd, i) => {
+                            if(fishes[i]) {
+                                fishes[i].count = fd.c || 0;
+                                fishes[i].maxLenRecord = fd.l || 0;
+                                fishes[i].maxWgtRecord = fd.w || 0;
+                                fishes[i].hasGiant = fd.g || false;
+                            }
+                        });
+                    } else if (data.fishCounts) { // 구버전 호환
+                        data.fishCounts.forEach((cnt, i) => { if(fishes[i]) fishes[i].count = cnt; });
+                    }
+
                     if(currentMap === 1) document.getElementById('map-name').innerText = "현재: " + maps[1].name;
                 } catch(e) {}
             }
@@ -536,7 +641,7 @@
 
         function resetData() {
             if(confirm("정말 모든 데이터를 삭제하고 처음부터 시작하시겠습니까?")) {
-                localStorage.removeItem('fishingTycoonSave_v3');
+                localStorage.removeItem('fishingTycoonSave_v4');
                 location.reload();
             }
         }
